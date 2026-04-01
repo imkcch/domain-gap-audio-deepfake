@@ -1,16 +1,28 @@
-# zero-shot-deepfake-enhancement
+# Zero-Shot Deepfake Enhancement
 
-> **Paper:** *Towards Undetectable Audio Deepfakes: A Zero-Shot Transfer Learning Approach Using Speech Enhancement Models*
-> **Status:** Under review for journal/conference submission
-> **Funding:** National Science and Technology Council (NSTC), Taiwan — NSTC College/University Student Research Project
+**Status:** Private — code for paper under journal review  
+**Funding:** NSTC College/University Student Research Project  
+**Supervisor:** Prof. Wen-Chieh Fang, MPLL, NDHU
  
 ---
  
 ## Overview
- 
-This repository contains the code and documentation for our research on zero-shot transfer learning for audio deepfake enhancement. We investigate whether speech enhancement models trained exclusively for noise remduction can remove synthetic artifacts from audio deepfakes into more natural-sounding speech, without any task-specific retraining.
+
+Applying DR-DiffuSE (speech enhancement diffusion model) to audio deepfakes in a **zero-shot** manner — no task-specific retraining. The model only learns noise→clean mapping, but we test if it generalizes to fake→real.
 
 This project is a continuation of prior undergraduate research at NDHU's Machine Perception and Learning Lab (MPLL) under Prof. Wen-Chieh Fang.
+
+---
+
+## Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/train.py` | Train condition generator |
+| `src/train_ddpm.py` | Train DDPM (DiffuSE / DiffuSEC) |
+| `src/joint_finetune.py` | Train refiner |
+| `src/test_ddpm.py` | Inference |
+| `src/chunk_inference.py` | Our addition — chunked processing for long audio |
 
 ---
 
@@ -23,11 +35,10 @@ We apply the [DR-DiffuSE](https://github.com/judiebig/DR-DiffuSE) framework, a d
 ---
  
 ## Environment
- 
-### Computing Server
-We run the code on a computing server with ASUS ROG RTX 4090 24GB, Intel Xeon W-3335, 256GB DDR4 ECC.
 
-### Docker Setup
+**Server:** ASUS ROG RTX 4090 24GB, Intel Xeon W-3335, 256GB RAM  
+**OS:** Ubuntu 24.04.3 LTS  
+**Docker:** nvcr.io/nvidia/pytorch:23.07-py3
  
 ```bash
 # Create and start container
@@ -44,7 +55,8 @@ docker start istft && docker attach istft
 cd /workspace/new_diffusion/DR-DiffuSE/src
 ```
  
-### Dataset Structure (mounted as read-only volume)
+### Dataset 
+Mounted as read-only volume at /data/lj_volume/voicebank/
  
 ```
 /data/lj_volume/voicebank/
@@ -70,31 +82,31 @@ pip install wandb rich pystoi pesq
 
 ## Training
  
-### Step 1 — Train Condition Generator (c_gen) model. Navigate to working directory and run: 
-```
-/python train.py
-```
-### Step 2 — Train DDPM model. Navigate to working directory and run:
-for DiffuSEC:
-```
-/python train_ddpm.py --model DiffuSEC --wandb
-```
-for DiffuSEC + condition generator:
-```
-/python train_ddpm.py --model DiffuSEC --c_gen --wandb
-```
-for DiffuSE + condition generator:
-```
-/python train_ddpm.py --model DiffuSE --c_gen --wandb
-```
-for refiner
-```
+# Step 1: Condition generator
+python train.py
+
+# Step 2: DDPM variants
+python train_ddpm.py --model DiffuSEC --wandb
+python train_ddpm.py --model DiffuSEC --c_gen --wandb
+python train_ddpm.py --model DiffuSE --c_gen --wandb
+
+# Step 3: Refiner
 python joint_finetune.py --fast_sampling --from_base --wandb
-```
-### Step 3 — Inference
-```
-/python test_ddpm.py --model DiffuSE --fast_sampling --c_gen --c_guidance --refine
-```
+
+---
+
+## Inference (Ablations)
+# Baseline
+python test_ddpm.py --model DiffuSE
+python test_ddpm.py --model DiffuSEC
+
+# Best traditional metrics result
+python test_ddpm.py --model DiffuSE --c_gen
+python test_ddpm.py --model DiffuSEC --fast_sampling
+
+# Best perceptual quality
+python test_ddpm.py --model DiffuSE --c_gen --fast_sampling --c_guidance --refine
+python test_ddpm.py --model DiffuSEC --c_gen -- c_guidance
 
 ---
 
