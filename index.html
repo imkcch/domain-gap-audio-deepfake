@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Limitations of Cross-Domain Transfer for Audio Deepfake Enhancement</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:        #2d3445;
+    --text:      #e6ecf7;
+    --text-dim:  #9aa8c0;
+    --accent:    #35eaff;
+    --border:    rgba(150,180,220,0.18);
+  }
+  *{ box-sizing:border-box; }
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Inter', sans-serif;
+    line-height:1.7;
+    font-size:16px;
+  }
+  .wrap{ max-width:1100px; margin:0 auto; padding:30px 24px 50px; }
+
+  h1{ font-size:1.9rem; font-weight:700; line-height:1.3; margin:0 0 10px; }
+  h2{
+    font-size:1.2rem; font-weight:600; margin:56px 0 18px;
+    padding-bottom:8px; border-bottom:1px solid var(--border);
+  }
+  p{ margin:0 0 16px; color:var(--text); }
+
+  a{ color:var(--accent); text-decoration:none; }
+  a:hover{ text-decoration:underline; }
+
+  .byline{ color:var(--text-dim); font-size:0.95rem; margin-bottom:4px; }
+  .status{
+    font-family:'JetBrains Mono', monospace; font-size:0.8rem;
+    color:var(--text-dim); margin-bottom:28px;
+  }
+
+  .abstract{ color:var(--text-dim); }
+  .abstract strong{ color:var(--text); }
+
+  .links{ font-family:'JetBrains Mono', monospace; font-size:0.85rem; margin:22px 0 0; }
+  .links span.sep{ color:var(--text-dim); margin:0 10px; }
+  .links .disabled{ color:var(--text-dim); text-decoration:none; cursor:default; }
+
+  /* ---- model architecture ---- */
+  .arch-img{
+    width:100%; max-width:100%; height:auto; display:block;
+    border:1px solid var(--border); border-radius:6px; background:#0d1424;
+  }
+  figcaption{
+    font-size:0.88rem; color:var(--text-dim); margin-top:10px; text-align:center;
+  }
+  figcaption em{ color:var(--text-dim); }
+
+  /* ---- samples table ---- */
+  table{ width:100%; border-collapse:collapse; margin-top:8px; }
+  th, td{
+    padding:12px 18px; 
+    border:1px solid var(--border); 
+    text-align:left; 
+    vertical-align:middle;
+  }
+  th{
+    font-family:'JetBrains Mono', monospace; 
+    font-size:0.78rem; 
+    text-transform:uppercase;
+    letter-spacing:0.04em; 
+    color:var(--text-dim); 
+    font-weight:500;
+  }
+  td.label{ 
+    font-family:'JetBrains Mono', monospace; 
+    font-size:0.88rem; 
+    white-space:nowrap; 
+  }
+  
+  /* Audio cell wrapper */
+  .audio-cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+  .audio-cell audio{ 
+    width:100%; 
+    min-width:180px; 
+    height:36px; 
+  }
+  .audio-cell .mos-label {
+    font-size:0.65rem; 
+    color:var(--text-dim); 
+    text-align:center; 
+    width:100%;
+    font-family:'JetBrains Mono', monospace;
+    letter-spacing:0.02em;
+  }
+  
+  .table-scroll{ overflow-x:auto; }
+
+  .note{ font-size:0.85rem; color:var(--text-dim); margin-top:14px; }
+
+  footer{
+    margin-top:70px; padding-top:24px; border-top:1px solid var(--border);
+    font-size:0.85rem; color:var(--text-dim);
+  }
+
+  h3.sample-group{
+    font-family:'JetBrains Mono', monospace;
+    font-size:0.85rem;
+    text-transform:uppercase;
+    letter-spacing:0.05em;
+    color:var(--accent);
+    margin:0 0 10px; }
+  .table-scroll + .table-scroll{ margin-top:32px; }
+
+  .title-block{
+    background:#0d1424;
+    border-bottom:1px solid var(--border);
+  }
+  .title-inner{
+    max-width:1100px;
+    margin:0 auto;
+    padding:48px 24px 32px;
+    text-align:center;
+  }
+
+  .end-block{
+    background:#0d1424;
+    border-top:1px solid var(--border);
+  }
+  .end-inner{
+    max-width:1100px;
+    margin:0 auto;
+    padding:0 24px 40px;
+  }
+  footer{
+    font-size:0.85rem;
+    color:var(--text-dim);
+  }
+
+  /* ── Justified text ── */
+  .justify{ text-align:justify; }
+
+    /* ── Responsive: smaller screens ── */
+  @media (max-width: 768px) {
+    .wrap{ max-width:100%; padding:20px 12px 40px; }
+    .title-inner{ padding:32px 12px 24px; }
+    .end-inner{ padding:0 12px 30px; }
+    th, td{ padding:8px 10px; }
+    .audio-cell audio{ min-width:100px; height:32px; }
+    .audio-cell .mos-label{ font-size:0.55rem; }
+    td.label{ font-size:0.7rem; }
+    .justify{ text-align:left; }
+  }
+</style>
+</head>
+<body>
+<div class="title-block">
+  <div class="title-inner">
+    <h1>Limitations of Cross-Domain Transfer for Audio Deepfake Enhancement</h1>
+    <p class="status">Preprint &middot; Currently under journal/conference review</p>
+  </div>
+</div>
+
+<div class="wrap">
+  <p class="abstract justify">
+    <strong>Abstract:</strong> While prior work has focused on improving generation quality or developing detection
+    systems, a separate question remains: can existing speech enhancement models remove synthetic artifacts from
+    deepfakes without task-specific retraining? This paper investigates whether cross-domain transfer from speech
+    enhancement to deepfake enhancement is feasible. We train a diffusion-based speech enhancement model (DR-DiffuSE)
+    on the LJSpeech dataset and apply it to vocoder-generated speech from the WaveFake dataset without fine-tuning.
+    Our experiments yield a clear negative result. Enhanced audio shows minimal improvement on traditional metrics and
+    actually degrades perceptual quality compared to the original deepfakes, and this failure is consistent across every
+    architecture and hyperparameter configuration we test, indicating a genuine boundary condition for transfer learning
+    in audio rather than an isolated failed setting. The domain gap between acoustic noise (the training objective)
+    and synthetic artifacts (the target application) is too large for naive transfer to succeed. However, we find that
+    this failure is specific to perceptual naturalness: speaker-identity preservation, measured via automatic speaker
+    verification, remains close to that of the unprocessed deepfakes even as perceptual quality degrades, suggesting
+    that naive enhancement affects different detection signals differently. We establish baseline performance metrics
+    for future research on cross-task transfer in audio processing, showing that while DiffuSEC with fast sampling
+    achieves STOI 0.93, neither architecture produces natural-sounding speech. This negative finding contributes to
+    understanding the limitations of transfer learning in audio domains and points to concrete next steps, including
+    testing enhanced audio against a dedicated spoofing countermeasure and establishing a fine-tuned upper bound to
+    isolate the cost of the domain gap.
+  </p>
+
+  <p class="links">
+    <a href="#">Preprint</a>
+    <span class="sep">|</span>
+    <span class="disabled">Code (private &mdash; released upon acceptance)</span>
+  </p>
+
+  <h2>Model Architecture</h2>
+  <figure>
+    <img class="arch-img" src="assets/arch.jpeg" alt="Model architecture diagram">
+    <figcaption><em>Figure 1.</em> Illustration of the zero-shot enhancement pipeline: (1) chunking the input waveform into
+3-second overlapping segments, (2) STFT conversion to spectrograms, (3) sequential processing
+through Condition Generator, Conditional DDPM, and optional Refinement Network (dashed
+box), (4) ISTFT back to waveform, and (5) overlap-add reconstruction with Hann window to
+produce the final full-length enhanced audio.</figcaption>
+  </figure>
+
+  <h2>Samples</h2>
+  <p class="justify">
+    Below are representative audio samples selected from our test set. These samples were chosen for their intelligibility and perceptual clarity,
+    allowing for meaningful side-by-side comparison of the enhancement effects.
+  </p>
+  <p class="justify">
+    Each row compares the <em>Clean</em> reference (bona fide human speech), the original <em>Fake</em> (synthetic deepfake),
+    and two enhancement configurations: <em>C-Gen</em> (Condition Generator only) and <em>Full Pipeline</em> (complete DR-DiffuSE framework).
+    For DiffuSEC, <em>C-Gen + C_GUID</em> includes guidance interpolation.
+  </p>
+
+  <!-- ===== DIFFUSE ===== -->
+  <div class="table-scroll">
+    <h3 class="sample-group">DiffuSE</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Sample</th>
+          <th>Clean</th>
+          <th>Fake</th>
+          <th>C-Gen</th>
+          <th>Full Pipeline</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="label">LJ001-0178</td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/clean/clean_LJ001-0178.wav"></audio>
+              <span class="mos-label">MOS 4.70</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/noisy/noisy_LJ001-0178.wav"></audio>
+              <span class="mos-label">MOS 4.50</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/diffuse-cgen/enhanced_LJ001-0178.wav"></audio>
+              <span class="mos-label">MOS 1.47</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/diffuse-full/enhanced_LJ001-0178.wav"></audio>
+              <span class="mos-label">MOS 2.30</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="label">LJ001-0185</td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/clean/clean_LJ001-0185.wav"></audio>
+              <span class="mos-label">MOS 4.47</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/noisy/noisy_LJ001-0185.wav"></audio>
+              <span class="mos-label">MOS 4.37</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/diffuse-cgen/enhanced_LJ001-0185.wav"></audio>
+              <span class="mos-label">MOS 1.03</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/diffuse-full/enhanced_LJ001-0185.wav"></audio>
+              <span class="mos-label">MOS 3.60</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="label">LJ002-0026</td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/clean/clean_LJ002-0026.wav"></audio>
+              <span class="mos-label">MOS 3.84</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/noisy/noisy_LJ002-0026.wav"></audio>
+              <span class="mos-label">MOS 4.05</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/diffuse-cgen/enhanced_LJ002-0026.wav"></audio>
+              <span class="mos-label">MOS 1.00</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/diffuse-full/enhanced_LJ002-0026.wav"></audio>
+              <span class="mos-label">MOS 3.63</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ===== DIFFUSEC ===== -->
+  <div class="table-scroll">
+    <h3 class="sample-group">DiffuSEC</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Sample</th>
+          <th>Clean</th>
+          <th>Fake</th>
+          <th>C-Gen + C_GUID</th>
+          <th>Full Pipeline</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="label">LJ001-0161</td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/clean/clean_LJ001-0161.wav"></audio>
+              <span class="mos-label">MOS 4.42</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/noisy/noisy_LJ001-0161.wav"></audio>
+              <span class="mos-label">MOS 4.14</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/diffusec-cgen-cguid/enhanced_LJ001-0161.wav"></audio>
+              <span class="mos-label">MOS 1.51</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/diffusec-full/enhanced_LJ001-0161.wav"></audio>
+              <span class="mos-label">MOS 2.51</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="label">LJ001-0175</td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/clean/clean_LJ001-0175.wav"></audio>
+              <span class="mos-label">MOS 4.34</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/noisy/noisy_LJ001-0175.wav"></audio>
+              <span class="mos-label">MOS 3.85</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/diffusec-cgen-cguid/enhanced_LJ001-0175.wav"></audio>
+              <span class="mos-label">MOS 2.77</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/diffusec-full/enhanced_LJ001-0175.wav"></audio>
+              <span class="mos-label">MOS 3.39</span>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td class="label">LJ001-0185</td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/clean/clean_LJ001-0185.wav"></audio>
+              <span class="mos-label">MOS 4.47</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/noisy/noisy_LJ001-0185.wav"></audio>
+              <span class="mos-label">MOS 4.37</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/diffusec-cgen-cguid/enhanced_LJ001-0185.wav"></audio>
+              <span class="mos-label">MOS 3.31</span>
+            </div>
+          </td>
+          <td>
+            <div class="audio-cell">
+              <audio controls src="selected_samples/diffusec-full/enhanced_LJ001-0185.wav"></audio>
+              <span class="mos-label">MOS 3.70</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<div class="end-block">
+  <div class="end-inner">
+    <footer>
+      &copy; 2026 Machine Perception and Learning Lab, National Dong Hwa University.
+      Funded by the National Science and Technology Council (NSTC), Taiwan &mdash; NSTC College/University Student Research Project.
+    </footer>
+  </div>
+</div>
+</body>
+</html>
